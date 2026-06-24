@@ -1,0 +1,5 @@
+# Namespace qui regroupe tous les objets Overleaf sur le cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: overleaf

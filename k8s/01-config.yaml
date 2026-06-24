@@ -1,0 +1,68 @@
+# =============================================================================
+# Configuration partagée par tous les services.
+#
+# overleaf-hosts : remplace les "127.0.0.1" du monolithe par les NOMS DE SERVICE
+#   k8s. Chaque service ne lit que les variables dont il a besoin ; les variables
+#   en trop sont inoffensives. C'est injecté dans CHAQUE Deployment via envFrom.
+#
+# overleaf-app : réglages applicatifs (équivalent du variables.env du Toolkit).
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: overleaf-hosts
+  namespace: overleaf
+data:
+  # Adresse d'écoute : 0.0.0.0 pour être joignable depuis les autres pods
+  # (par défaut les services Overleaf bindent localhost → injoignables).
+  LISTEN_ADDRESS: "0.0.0.0"
+
+  # --- Découverte de services (nom = nom du Service k8s) ---
+  CHAT_HOST: "chat"
+  CLSI_HOST: "clsi"
+  DOCSTORE_HOST: "docstore"
+  DOCUMENT_UPDATER_HOST: "document-updater"
+  DOCUPDATER_HOST: "document-updater"
+  FILESTORE_HOST: "filestore"
+  GIT_SERVICE_HOST: "git"
+  HISTORY_V1_HOST: "history-v1"
+  V1_HISTORY_HOST: "history-v1"
+  V1_HISTORY_FULL_HOST: "history-v1"
+  NOTIFICATIONS_HOST: "notifications"
+  PROJECT_HISTORY_HOST: "project-history"
+  REALTIME_HOST: "real-time"
+  WEB_HOST: "web"
+  WEB_API_HOST: "web"
+  # NB : REFERENCES_HOST est volontairement absent ici. Le service "references"
+  # l'utilise comme adresse de bind, donc on le règle au cas par cas (= references
+  # pour les clients, = 0.0.0.0 sur le pod references lui-même, cf. 20-backend.yaml).
+
+  # --- Mongo (replica set "overleaf", cf. 10-mongo.yaml) ---
+  MONGO_HOST: "mongo"
+  MONGO_CONNECTION_STRING: "mongodb://mongo/sharelatex"
+
+  # --- Redis : une seule instance pour tous les usages ---
+  REDIS_HOST: "redis"
+  DOC_UPDATER_REDIS_HOST: "redis"
+  HISTORY_REDIS_HOST: "redis"
+  LOCK_REDIS_HOST: "redis"
+  PUBSUB_REDIS_HOST: "redis"
+  REAL_TIME_REDIS_HOST: "redis"
+  SESSIONS_REDIS_HOST: "redis"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: overleaf-app
+  namespace: overleaf
+data:
+  OVERLEAF_APP_NAME: "Overleaf Artishow"
+  # ⚠️ À remplacer par l'IP ou le nom DNS de ta VM (ex: http://10.0.0.42)
+  OVERLEAF_SITE_URL: "http://localhost"
+  OVERLEAF_MONGO_URL: "mongodb://mongo/sharelatex"
+  OVERLEAF_REDIS_HOST: "redis"
+  EMAIL_CONFIRMATION_DISABLED: "true"
+  ENABLED_LINKED_FILE_TYPES: "project_file,project_output_file"
+  ENABLE_CONVERSIONS: "true"
+  # CE : compilation dans le conteneur clsi (pas de conteneurs frères / socket Docker)
+  SANDBOXED_COMPILES: "false"

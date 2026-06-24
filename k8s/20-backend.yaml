@@ -1,0 +1,236 @@
+# =============================================================================
+# Services backend (sans frontal web). Un Deployment + un Service chacun.
+# Image = une image PAR SERVICE (à construire/publier par la CI, cf. README).
+# Chaque pod reçoit la config partagée (hosts + app + secrets) via envFrom.
+#
+# replicas: 1 partout pour démarrer (certains services ont un état dans redis/mongo
+# ou des hypothèses single-instance ; on scalera après validation).
+# =============================================================================
+
+# ----------------------------- filestore (3009) ------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: filestore, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: filestore } }
+  template:
+    metadata: { labels: { app: filestore } }
+    spec:
+      containers:
+        - name: filestore
+          image: ghcr.io/theelse2098/overleaf-artishow-filestore:latest
+          ports: [{ containerPort: 3009 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/overleaf/data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: overleaf-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: filestore, namespace: overleaf }
+spec:
+  selector: { app: filestore }
+  ports: [{ port: 3009, targetPort: 3009 }]
+---
+# ----------------------------- docstore (3016) -------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: docstore, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: docstore } }
+  template:
+    metadata: { labels: { app: docstore } }
+    spec:
+      containers:
+        - name: docstore
+          image: ghcr.io/theelse2098/overleaf-artishow-docstore:latest
+          ports: [{ containerPort: 3016 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: docstore, namespace: overleaf }
+spec:
+  selector: { app: docstore }
+  ports: [{ port: 3016, targetPort: 3016 }]
+---
+# ----------------------------- history-v1 (3100) -----------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: history-v1, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: history-v1 } }
+  template:
+    metadata: { labels: { app: history-v1 } }
+    spec:
+      containers:
+        - name: history-v1
+          image: ghcr.io/theelse2098/overleaf-artishow-history-v1:latest
+          ports: [{ containerPort: 3100 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/overleaf/data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: overleaf-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: history-v1, namespace: overleaf }
+spec:
+  selector: { app: history-v1 }
+  ports: [{ port: 3100, targetPort: 3100 }]
+---
+# -------------------------- document-updater (3003) --------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: document-updater, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: document-updater } }
+  template:
+    metadata: { labels: { app: document-updater } }
+    spec:
+      containers:
+        - name: document-updater
+          image: ghcr.io/theelse2098/overleaf-artishow-document-updater:latest
+          ports: [{ containerPort: 3003 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: document-updater, namespace: overleaf }
+spec:
+  selector: { app: document-updater }
+  ports: [{ port: 3003, targetPort: 3003 }]
+---
+# --------------------------- project-history (3054) --------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: project-history, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: project-history } }
+  template:
+    metadata: { labels: { app: project-history } }
+    spec:
+      containers:
+        - name: project-history
+          image: ghcr.io/theelse2098/overleaf-artishow-project-history:latest
+          ports: [{ containerPort: 3054 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: project-history, namespace: overleaf }
+spec:
+  selector: { app: project-history }
+  ports: [{ port: 3054, targetPort: 3054 }]
+---
+# ------------------------------- clsi (3013) ---------------------------------
+# clsi compile le LaTeX. Il monte le volume PARTAGÉ (écrit les sorties que web/git
+# lisent). ⚠️ L'image clsi doit contenir TeXLive (cf. README, point à valider).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: clsi, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: clsi } }
+  template:
+    metadata: { labels: { app: clsi } }
+    spec:
+      containers:
+        - name: clsi
+          image: ghcr.io/theelse2098/overleaf-artishow-clsi:latest
+          ports: [{ containerPort: 3013 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/overleaf/data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: overleaf-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: clsi, namespace: overleaf }
+spec:
+  selector: { app: clsi }
+  ports: [{ port: 3013, targetPort: 3013 }]
+---
+# ------------------------------- chat (3010) ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: chat, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: chat } }
+  template:
+    metadata: { labels: { app: chat } }
+    spec:
+      containers:
+        - name: chat
+          image: ghcr.io/theelse2098/overleaf-artishow-chat:latest
+          ports: [{ containerPort: 3010 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: chat, namespace: overleaf }
+spec:
+  selector: { app: chat }
+  ports: [{ port: 3010, targetPort: 3010 }]
+---
+# --------------------------- notifications (3042) ----------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: notifications, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: notifications } }
+  template:
+    metadata: { labels: { app: notifications } }
+    spec:
+      containers:
+        - name: notifications
+          image: ghcr.io/theelse2098/overleaf-artishow-notifications:latest
+          ports: [{ containerPort: 3042 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: notifications, namespace: overleaf }
+spec:
+  selector: { app: notifications }
+  ports: [{ port: 3042, targetPort: 3042 }]
+# NB : le service "references" (recherche de références biblio) est volontairement
+# absent : son Dockerfile est incompatible avec ce monorepo (cf. CI), donc aucune
+# image n'est publiée. À réintégrer ici quand son image sera disponible.

@@ -1,0 +1,23 @@
+# =============================================================================
+# Volumes persistants.
+#
+# overleaf-data : volume PARTAGÉ (ReadWriteMany) monté sur /var/lib/overleaf/data
+#   dans web + git + clsi. Indispensable : clsi y écrit les compilations, web et
+#   git y lisent/écrivent les working trees git. RWX (et pas hostPath) pour ne pas
+#   bloquer le scaling multi-nœuds.
+#   ⚠️ Nécessite un provisioner RWX (ex: nfs-subdir-external-provisioner).
+#      Mets le bon storageClassName ci-dessous (ex: "nfs-client").
+#
+# Les autres volumes (mongo, redis) sont définis dans leurs StatefulSet/Deployment.
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: overleaf-data
+  namespace: overleaf
+spec:
+  accessModes: ["ReadWriteMany"]
+  # storageClassName: nfs-client     # ← décommente/règle selon ton provisioner RWX
+  resources:
+    requests:
+      storage: 10Gi

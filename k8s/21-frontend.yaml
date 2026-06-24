@@ -1,0 +1,101 @@
+# =============================================================================
+# Services frontaux : real-time (websockets), web (l'appli), git (service custom).
+# web et git montent le VOLUME PARTAGÉ (working trees + compiles), comme clsi.
+# =============================================================================
+
+# ----------------------------- real-time (3026) ------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: real-time, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: real-time } }
+  template:
+    metadata: { labels: { app: real-time } }
+    spec:
+      containers:
+        - name: real-time
+          image: ghcr.io/theelse2098/overleaf-artishow-real-time:latest
+          ports: [{ containerPort: 3026 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: real-time, namespace: overleaf }
+spec:
+  selector: { app: real-time }
+  ports: [{ port: 3026, targetPort: 3026 }]
+---
+# -------------------------------- web (3000) ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: web } }
+  template:
+    metadata: { labels: { app: web } }
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/theelse2098/overleaf-artishow-web:latest
+          ports: [{ containerPort: 3000 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/overleaf/data }
+          readinessProbe:
+            httpGet: { path: /status, port: 3000 }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: overleaf-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: web, namespace: overleaf }
+spec:
+  selector: { app: web }
+  ports: [{ port: 3000, targetPort: 3000 }]
+---
+# -------------------------------- git (3099) ---------------------------------
+# Service git custom. Partage le volume avec web et clsi (working trees + compiles).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: git, namespace: overleaf }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: git } }
+  template:
+    metadata: { labels: { app: git } }
+    spec:
+      containers:
+        - name: git
+          image: ghcr.io/theelse2098/overleaf-artishow-git:latest
+          ports: [{ containerPort: 3099 }]
+          envFrom:
+            - configMapRef: { name: overleaf-hosts }
+            - configMapRef: { name: overleaf-app }
+            - secretRef: { name: overleaf-secrets }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/overleaf/data }
+          readinessProbe:
+            httpGet: { path: /health_check, port: 3099 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: overleaf-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: git, namespace: overleaf }
+spec:
+  selector: { app: git }
+  ports: [{ port: 3099, targetPort: 3099 }]

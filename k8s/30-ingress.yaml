@@ -1,0 +1,38 @@
+# =============================================================================
+# Ingress : reproduit le routage du nginx du monolithe.
+#   /socket.io  → real-time (websockets de l'éditeur)
+#   /           → web
+# Nécessite un contrôleur ingress-nginx installé sur le cluster.
+# ingress-nginx gère les websockets nativement (pas d'annotation spéciale requise).
+#
+# ⚠️ Remplace `host:` par le nom DNS de ta VM, ou retire-le pour matcher toute requête
+#    (et accède via http://<IP_VM>). Garde-le cohérent avec OVERLEAF_SITE_URL.
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: overleaf
+  namespace: overleaf
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: real-time
+                port:
+                  number: 3026
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 3000

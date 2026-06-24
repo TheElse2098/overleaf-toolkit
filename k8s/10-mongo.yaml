@@ -1,0 +1,91 @@
+# =============================================================================
+# MongoDB.
+# Overleaf (≥ v4, ici 6.2.0) EXIGE un replica set, même à un seul nœud
+# (transactions de l'historique). On lance donc mongod avec --replSet overleaf,
+# puis un Job initialise le replica set UNE fois, avec le host explicite "mongo"
+# (= nom du Service) pour que le driver puisse se reconnecter.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: overleaf
+spec:
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  namespace: overleaf
+spec:
+  serviceName: mongo
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:8.0
+          command: ["mongod", "--replSet", "overleaf", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+# Job d'initialisation du replica set (idempotent : ne refait rien si déjà fait).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-init-replicaset
+  namespace: overleaf
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: mongo:8.0
+          command:
+            - bash
+            - -c
+            - |
+              set -e
+              echo "Attente de mongo..."
+              until mongosh --host mongo --quiet --eval 'db.adminCommand("ping")' >/dev/null 2>&1; do
+                sleep 3
+              done
+              echo "Initialisation du replica set (si nécessaire)..."
+              mongosh --host mongo --quiet --eval '
+                try {
+                  rs.status();
+                  print("replica set déjà initialisé");
+                } catch (e) {
+                  rs.initiate({_id: "overleaf", members: [{_id: 0, host: "mongo:27017"}]});
+                  print("replica set initialisé");
+                }
+              '
