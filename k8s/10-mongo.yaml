@@ -11,6 +11,7 @@ metadata:
   name: mongo
   namespace: overleaf
 spec:
+  clusterIP: None          # headless : "mongo" résout vers l'IP du pod (requis pour le replica set)
   selector:
     app: mongo
   ports:
@@ -85,7 +86,7 @@ spec:
                   rs.status();
                   print("replica set déjà initialisé");
                 } catch (e) {
-                  rs.initiate({_id: "overleaf", members: [{_id: 0, host: "mongo:27017"}]});
+                  rs.initiate({_id: "overleaf", members: [{_id: 0, host: "mongo-0.mongo.overleaf.svc.cluster.local:27017"}]});
                   print("replica set initialisé");
                 }
               '

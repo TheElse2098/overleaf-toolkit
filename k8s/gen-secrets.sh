@@ -33,6 +33,7 @@ metadata:
 type: Opaque
 stringData:
   OVERLEAF_SESSION_SECRET: "${SESSION}"
+  SESSION_SECRET: "${SESSION}"          # nom natif lu par web et real-time
   OVERLEAF_INVITE_TOKEN_SECRET: "${INVITE}"
   WEB_API_USER: "${WEB_API_USER}"
   WEB_API_PASSWORD: "${WEB_API_PASS}"
