@@ -19,7 +19,8 @@ spec:
     spec:
       containers:
         - name: filestore
-          image: ghcr.io/theelse2098/overleaf-artishow-filestore:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-filestore:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3009 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -50,7 +51,8 @@ spec:
     spec:
       containers:
         - name: docstore
-          image: ghcr.io/theelse2098/overleaf-artishow-docstore:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-docstore:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3016 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -76,7 +78,8 @@ spec:
     spec:
       containers:
         - name: history-v1
-          image: ghcr.io/theelse2098/overleaf-artishow-history-v1:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-history-v1:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3100 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -107,7 +110,8 @@ spec:
     spec:
       containers:
         - name: document-updater
-          image: ghcr.io/theelse2098/overleaf-artishow-document-updater:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-document-updater:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3003 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -133,7 +137,8 @@ spec:
     spec:
       containers:
         - name: project-history
-          image: ghcr.io/theelse2098/overleaf-artishow-project-history:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-project-history:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3054 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -161,7 +166,8 @@ spec:
     spec:
       containers:
         - name: clsi
-          image: ghcr.io/theelse2098/overleaf-artishow-clsi:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-clsi:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3013 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -192,7 +198,8 @@ spec:
     spec:
       containers:
         - name: chat
-          image: ghcr.io/theelse2098/overleaf-artishow-chat:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-chat:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3010 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -218,7 +225,8 @@ spec:
     spec:
       containers:
         - name: notifications
-          image: ghcr.io/theelse2098/overleaf-artishow-notifications:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-notifications:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3042 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }

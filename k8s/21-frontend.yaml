@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: real-time
-          image: ghcr.io/theelse2098/overleaf-artishow-real-time:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-real-time:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3026 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -41,7 +42,8 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/theelse2098/overleaf-artishow-web:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-web:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3000 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
@@ -77,7 +79,8 @@ spec:
     spec:
       containers:
         - name: git
-          image: ghcr.io/theelse2098/overleaf-artishow-git:latest
+          image: ghcr.io/theelse2098/overleaf-artishow-git:k8s
+          imagePullPolicy: Always
           ports: [{ containerPort: 3099 }]
           envFrom:
             - configMapRef: { name: overleaf-hosts }
