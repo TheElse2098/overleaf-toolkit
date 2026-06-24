@@ -1,15 +1,34 @@
 # =============================================================================
-# Volumes persistants.
+# Volume PARTAGÉ (ReadWriteMany) monté sur /var/lib/overleaf/data dans
+# web + git + clsi (+ proxy en lecture). Indispensable : clsi y écrit les
+# compilations, web et git y lisent/écrivent les working trees git.
 #
-# overleaf-data : volume PARTAGÉ (ReadWriteMany) monté sur /var/lib/overleaf/data
-#   dans web + git + clsi. Indispensable : clsi y écrit les compilations, web et
-#   git y lisent/écrivent les working trees git. RWX (et pas hostPath) pour ne pas
-#   bloquer le scaling multi-nœuds.
-#   ⚠️ Nécessite un provisioner RWX (ex: nfs-subdir-external-provisioner).
-#      Mets le bon storageClassName ci-dessous (ex: "nfs-client").
+# RWX réel via un serveur NFS local à la VM + un PersistentVolume "nfs:" NATIF
+# (in-tree, aucun provisioner ni CSI à installer). Compatible multi-nœuds.
 #
-# Les autres volumes (mongo, redis) sont définis dans leurs StatefulSet/Deployment.
+# PRÉREQUIS sur la VM (une fois) :
+#   sudo apt-get install -y nfs-kernel-server nfs-common
+#   sudo mkdir -p /srv/overleaf-data && sudo chown nobody:nogroup /srv/overleaf-data
+#   echo "/srv/overleaf-data *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
+#   sudo exportfs -ra && sudo systemctl enable --now nfs-kernel-server
+#
+# ⚠️ Remplace <IP_DE_LA_VM> par l'IP de la VM (pas 127.0.0.1, pour rester
+#    joignable depuis tous les nœuds).
 # =============================================================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: overleaf-data
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  nfs:
+    server: <IP_DE_LA_VM>
+    path: /srv/overleaf-data
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,7 +36,8 @@ metadata:
   namespace: overleaf
 spec:
   accessModes: ["ReadWriteMany"]
-  # storageClassName: nfs-client     # ← décommente/règle selon ton provisioner RWX
+  storageClassName: ""
+  volumeName: overleaf-data
   resources:
     requests:
       storage: 10Gi
