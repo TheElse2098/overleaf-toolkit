@@ -49,6 +49,15 @@ data:
   PUBSUB_REDIS_HOST: "redis"
   REAL_TIME_REDIS_HOST: "redis"
   SESSIONS_REDIS_HOST: "redis"
+  # Ports explicites : sinon parseInt(undefined)=NaN. (enableServiceLinks=false
+  # empêche en plus k8s d'injecter REDIS_PORT=tcp://... qui casserait tout.)
+  REDIS_PORT: "6379"
+  DOC_UPDATER_REDIS_PORT: "6379"
+  HISTORY_REDIS_PORT: "6379"
+  LOCK_REDIS_PORT: "6379"
+  PUBSUB_REDIS_PORT: "6379"
+  REAL_TIME_REDIS_PORT: "6379"
+  SESSIONS_REDIS_PORT: "6379"
 ---
 apiVersion: v1
 kind: ConfigMap

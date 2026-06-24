@@ -13,6 +13,7 @@ spec:
   template:
     metadata: { labels: { app: real-time } }
     spec:
+      enableServiceLinks: false
       containers:
         - name: real-time
           image: ghcr.io/theelse2098/overleaf-artishow-real-time:k8s
@@ -40,6 +41,7 @@ spec:
   template:
     metadata: { labels: { app: web } }
     spec:
+      enableServiceLinks: false
       containers:
         - name: web
           image: ghcr.io/theelse2098/overleaf-artishow-web:k8s
@@ -77,6 +79,7 @@ spec:
   template:
     metadata: { labels: { app: git } }
     spec:
+      enableServiceLinks: false
       containers:
         - name: git
           image: ghcr.io/theelse2098/overleaf-artishow-git:k8s
